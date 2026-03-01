@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>쇼핑 리스트</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            #F5F0E8;
+      --surface:       #FEFCF9;
+      --surface-hover: #EDE8DF;
+      --accent:        #6B9B6F;
+      --accent-light:  rgba(107,155,111,0.12);
+      --accent-dark:   #4A7A4E;
+      --text:          #1A1A1A;
+      --text-muted:    #888880;
+      --text-faint:    #B8B5AF;
+      --border:        rgba(0,0,0,0.08);
+      --border-accent: rgba(107,155,111,0.35);
+      --danger:        #C4622D;
+      --danger-bg:     rgba(196,98,45,0.08);
+      --shadow-sm:     0 1px 4px rgba(0,0,0,0.06);
+      --shadow-md:     0 4px 20px rgba(0,0,0,0.08);
+      --radius:        18px;
+      --radius-sm:     11px;
+      --ease:          cubic-bezier(0.4, 0, 0.2, 1);
+      --spring:        cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    [data-theme="dark"] {
+      --bg:            #0E1410;
+      --surface:       #172018;
+      --surface-hover: #1F2B20;
+      --accent:        #8EBF92;
+      --accent-light:  rgba(142,191,146,0.10);
+      --accent-dark:   #6B9B6F;
+      --text:          #E6DDD0;
+      --text-muted:    #7A8A78;
+      --text-faint:    #4A5A48;
+      --border:        rgba(255,255,255,0.07);
+      --border-accent: rgba(142,191,146,0.28);
+      --danger:        #E0805A;
+      --danger-bg:     rgba(224,128,90,0.10);
+      --shadow-sm:     0 1px 6px rgba(0,0,0,0.35);
+      --shadow-md:     0 4px 24px rgba(0,0,0,0.50);
+    }
+
+    /* ── Base ── */
+    body {
+      font-family: 'Outfit', -apple-system, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px 100px;
+      transition: background 0.3s var(--ease);
+      position: relative;
+    }
+
+    /* Grain overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Background blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+      transition: background 0.5s var(--ease);
+    }
+    .blob-1 {
+      width: 420px; height: 380px;
+      background: rgba(107,155,111,0.13);
+      top: -80px; right: -120px;
+    }
+    .blob-2 {
+      width: 280px; height: 280px;
+      background: rgba(196,160,90,0.09);
+      bottom: 60px; left: -60px;
+    }
+    [data-theme="dark"] .blob-1 { background: rgba(142,191,146,0.07); }
+    [data-theme="dark"] .blob-2 { background: rgba(196,160,90,0.05); }
+
+    /* ── Layout ── */
+    .app {
+      width: 100%;
+      max-width: 460px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 28px;
+      animation: fadeUp 0.5s var(--ease) both;
+    }
+
+    .label-eyebrow {
+      font-family: 'Outfit', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 5px;
+    }
+
+    .title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 46px;
+      font-weight: 600;
+      line-height: 0.95;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .title em {
+      font-style: italic;
+      font-weight: 300;
+      color: var(--accent);
+    }
+
+    .date-tag {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--text-muted);
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
+
+    .header-actions { display: flex; gap: 8px; padding-top: 6px; }
+
+    .btn-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s var(--ease);
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: scale(1.05);
+    }
+
+    .btn-icon:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ── Progress Card ── */
+    .progress-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s var(--ease);
+      animation: fadeUp 0.5s 0.1s var(--ease) both;
+    }
+
+    .progress-card[hidden] { display: none; }
+
+    .ring-wrap {
+      flex-shrink: 0;
+      position: relative;
+      width: 54px;
+      height: 54px;
+    }
+
+    .progress-ring { transform: rotate(-90deg); }
+
+    .ring-bg {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 3.5;
+    }
+
+    .ring-fill {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      stroke-dasharray: 131.95;
+      stroke-dashoffset: 131.95;
+      transition: stroke-dashoffset 0.7s var(--ease);
+    }
+
+    .ring-pct {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .progress-info { flex: 1; min-width: 0; }
+
+    .progress-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .progress-sub {
+      font-size: 12px;
+      font-weight: 300;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .progress-bar-track {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-dark), var(--accent));
+      border-radius: 2px;
+      transition: width 0.7s var(--ease);
+    }
+
+    /* ── Input Row ── */
+    .input-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 6px 6px 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      animation: fadeUp 0.5s 0.15s var(--ease) both;
+    }
+
+    .input-wrap:focus-within {
+      border-color: var(--border-accent);
+      box-shadow: var(--shadow-md), 0 0 0 3px var(--accent-light);
+    }
+
+    .input-wrap input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--text);
+      min-width: 0;
+      caret-color: var(--accent);
+    }
+
+    .input-wrap input::placeholder {
+      color: var(--text-faint);
+      font-weight: 300;
+    }
+
+    .btn-add {
+      padding: 9px 18px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: background 0.2s var(--ease), transform 0.1s;
+      flex-shrink: 0;
+    }
+
+    .btn-add:hover { background: var(--accent-dark); }
+    .btn-add:active { transform: scale(0.96); }
+    .btn-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* ── List ── */
+    .list-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 13px 14px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      position: relative;
+      overflow: hidden;
+      animation: itemIn 0.35s var(--spring) both;
+      transition: background 0.2s var(--ease), border-color 0.2s var(--ease), opacity 0.25s var(--ease);
+    }
+
+    /* Left accent stripe */
+    .item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 18%;
+      bottom: 18%;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+      transform: scaleY(0);
+      transform-origin: center;
+      transition: transform 0.25s var(--spring);
+    }
+
+    .item:hover {
+      background: var(--surface-hover);
+      border-color: var(--border-accent);
+    }
+
+    .item:hover::before { transform: scaleY(1); }
+
+    .item.done {
+      opacity: 0.5;
+    }
+
+    .item.done::before {
+      transform: scaleY(1);
+      background: var(--text-faint);
+    }
+
+    @keyframes itemIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes itemOut {
+      to {
+        opacity: 0;
+        transform: translateX(16px) scale(0.97);
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-bottom: 0;
+        border-width: 0;
+      }
+    }
+
+    .item.removing {
+      animation: itemOut 0.22s var(--ease) forwards;
+      overflow: hidden;
+      max-height: 80px;
+      transition: max-height 0.22s var(--ease), border-color 0s;
+    }
+
+    /* Custom checkbox */
+    .check-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--border-accent);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
+      padding: 0;
+    }
+
+    .check-btn:hover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .check-btn.checked {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .check-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .check-icon {
+      opacity: 0;
+      transform: scale(0.4) rotate(-10deg);
+      transition: opacity 0.18s var(--ease), transform 0.22s var(--spring);
+    }
+
+    .check-btn.checked .check-icon {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+
+    .item-name {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--text);
+      word-break: break-word;
+      transition: color 0.2s var(--ease);
+      line-height: 1.4;
+    }
+
+    .item.done .item-name {
+      text-decoration: line-through;
+      color: var(--text-faint);
+    }
+
+    .btn-delete {
+      width: 30px;
+      height: 30px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--text-faint);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      opacity: 0;
+      transform: scale(0.85);
+      transition: opacity 0.15s var(--ease), transform 0.15s var(--ease), background 0.15s, color 0.15s;
+    }
+
+    .item:hover .btn-delete {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .btn-delete:hover {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .btn-delete:focus-visible {
+      outline: 2px solid var(--danger);
+      outline-offset: 2px;
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* ── Loading ── */
+    .loading-state {
+      text-align: center;
+      padding: 48px 20px;
+    }
+
+    .loading-dots {
+      display: flex;
+      gap: 7px;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .loading-dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: dotBounce 1.3s infinite var(--ease);
+    }
+
+    .loading-dots span:nth-child(2) { animation-delay: 0.18s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.36s; }
+
+    @keyframes dotBounce {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40%            { transform: scale(1);   opacity: 1;   }
+    }
+
+    .loading-state p {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-muted);
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      display: none;
+      text-align: center;
+      padding: 56px 24px;
+    }
+
+    .empty-state.visible { display: block; }
+
+    .empty-icon-wrap {
+      width: 72px;
+      height: 72px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 18px;
+      font-size: 28px;
+    }
+
+    .empty-state h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-muted);
+    }
+
+    /* ── Footer ── */
+    .footer-actions {
+      margin-top: 14px;
+      display: none;
+    }
+
+    .footer-actions.visible { display: block; }
+
+    .btn-clear {
+      width: 100%;
+      padding: 11px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s var(--ease);
+    }
+
+    .btn-clear:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: var(--danger-bg);
+    }
+
+    .btn-clear:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
+  <div class="app">
+
+    <!-- Header -->
+    <header class="header">
+      <div>
+        <p class="label-eyebrow">My Shopping</p>
+        <h1 class="title">쇼핑 <em>리스트</em></h1>
+        <span class="date-tag" id="dateTag"></span>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" id="themeBtn" aria-label="테마 변경">
+          <!-- Sun icon (shown in light mode) -->
+          <svg id="iconSun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <!-- Moon icon (shown in dark mode) -->
+          <svg id="iconMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Progress Card -->
+    <div class="progress-card" id="progressCard" hidden>
+      <div class="ring-wrap">
+        <svg class="progress-ring" width="54" height="54" viewBox="0 0 54 54">
+          <circle class="ring-bg" cx="27" cy="27" r="21"/>
+          <circle class="ring-fill" id="ringFill" cx="27" cy="27" r="21"/>
+        </svg>
+        <div class="ring-pct" id="ringPct">0%</div>
+      </div>
+      <div class="progress-info">
+        <div class="progress-title" id="progressTitle">0개 완료</div>
+        <div class="progress-sub" id="progressSub">전체 0개</div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressBarFill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-wrap" style="animation: fadeUp 0.5s 0.2s cubic-bezier(0.4,0,0.2,1) both;">
+      <input type="text" id="itemInput" placeholder="아이템을 입력하세요..." maxlength="80" autocomplete="off">
+      <button class="btn-add" onclick="addItem()">추가</button>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-state" id="loadingState">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <p>불러오는 중...</p>
+    </div>
+
+    <!-- List -->
+    <div class="list-wrap" id="listWrap"></div>
+
+    <!-- Empty -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon-wrap">🛍️</div>
+      <h3>리스트가 비어 있어요</h3>
+      <p>위 입력창에서 아이템을 추가해 보세요</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-actions" id="footerActions">
+      <button class="btn-clear" onclick="clearChecked()">완료된 항목 모두 삭제</button>
+    </div>
+
+  </div><!-- /.app -->
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    /* ── Theme ── */
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('themeBtn');
+    const iconSun  = document.getElementById('iconSun');
+    const iconMoon = document.getElementById('iconMoon');
+    let isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    function applyTheme() {
+      html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      iconSun.style.display  = isDark ? 'none'  : 'block';
+      iconMoon.style.display = isDark ? 'block' : 'none';
+    }
+
+    themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(); });
+    applyTheme();
+
+    /* ── Date ── */
+    document.getElementById('dateTag').textContent =
+      new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+
+    /* ── Supabase ── */
+    const SUPABASE_URL      = 'https://oqguwvsbfijfacgypvpe.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xZ3V3dnNiZmlqZmFjZ3lwdnBlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNTkxNTAsImV4cCI6MjA4NzkzNTE1MH0.XIkRXnpMIsAmzpZpQNlp1jN92QeZ4a-GiFzoGWasgP0';
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let items = [];
+
+    const itemInput    = document.getElementById('itemInput');
+    const listWrap     = document.getElementById('listWrap');
+    const emptyState   = document.getElementById('emptyState');
+    const loadingState = document.getElementById('loadingState');
+    const progressCard = document.getElementById('progressCard');
+    const ringFill     = document.getElementById('ringFill');
+    const ringPct      = document.getElementById('ringPct');
+    const progressTitle = document.getElementById('progressTitle');
+    const progressSub  = document.getElementById('progressSub');
+    const progressBarFill = document.getElementById('progressBarFill');
+    const footerActions = document.getElementById('footerActions');
+
+    // Circumference for r=21: 2π×21 ≈ 131.95
+    const CIRC = 2 * Math.PI * 21;
+
+    itemInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.isComposing) addItem();
+    });
+
+    /* ── Render ── */
+    function render() {
+      const total   = items.length;
+      const done    = items.filter(i => i.done).length;
+      const pct     = total > 0 ? Math.round((done / total) * 100) : 0;
+
+      if (total === 0) {
+        progressCard.hidden = true;
+        emptyState.classList.add('visible');
+        footerActions.classList.remove('visible');
+      } else {
+        progressCard.hidden = false;
+        emptyState.classList.remove('visible');
+        footerActions.classList.toggle('visible', done > 0);
+        ringFill.style.strokeDashoffset = CIRC - (pct / 100) * CIRC;
+        ringPct.textContent = pct + '%';
+        progressTitle.textContent = done + '개 완료';
+        progressSub.textContent   = '전체 ' + total + '개';
+        progressBarFill.style.width = pct + '%';
+      }
+
+      listWrap.innerHTML = '';
+      items.forEach((item, idx) => {
+        const el = document.createElement('div');
+        el.className = 'item' + (item.done ? ' done' : '');
+        el.style.animationDelay = idx < 12 ? (idx * 40) + 'ms' : '0ms';
+
+        el.innerHTML = `
+          <button class="check-btn${item.done ? ' checked' : ''}"
+                  aria-label="${item.done ? '완료 취소' : '완료 표시'}"
+                  aria-pressed="${item.done}">
+            <svg class="check-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+              <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <span class="item-name">${escHtml(item.name)}</span>
+          <button class="btn-delete" aria-label="삭제">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <line x1="1.5" y1="1.5" x2="11.5" y2="11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="11.5" y1="1.5" x2="1.5" y2="11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </button>
+        `;
+
+        el.querySelector('.check-btn').addEventListener('click', () => toggleItem(item.id));
+        el.querySelector('.btn-delete').addEventListener('click', () => deleteItem(item.id, el));
+        listWrap.appendChild(el);
+      });
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ── Actions ── */
+    async function loadItems() {
+      loadingState.style.display = 'block';
+      const { data, error } = await db
+        .from('shopping_items')
+        .select('*')
+        .order('created_at', { ascending: false });
+      loadingState.style.display = 'none';
+      if (error) { console.error('불러오기 오류:', error); return; }
+      items = data;
+      render();
+    }
+
+    async function addItem() {
+      const name = itemInput.value.trim();
+      if (!name) { itemInput.focus(); return; }
+      itemInput.value = '';
+      itemInput.focus();
+
+      const { data, error } = await db
+        .from('shopping_items')
+        .insert({ name, done: false })
+        .select()
+        .single();
+
+      if (error) { console.error('추가 오류:', error); return; }
+      items.unshift(data);
+      render();
+    }
+
+    async function toggleItem(id) {
+      const item = items.find(i => i.id === id);
+      if (!item) return;
+
+      const { error } = await db
+        .from('shopping_items')
+        .update({ done: !item.done })
+        .eq('id', id);
+
+      if (error) { console.error('수정 오류:', error); return; }
+      item.done = !item.done;
+      render();
+    }
+
+    async function deleteItem(id, el) {
+      el.classList.add('removing');
+      await new Promise(r => setTimeout(r, 230));
+
+      const { error } = await db
+        .from('shopping_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) { console.error('삭제 오류:', error); el.classList.remove('removing'); return; }
+      items = items.filter(i => i.id !== id);
+      render();
+    }
+
+    async function clearChecked() {
+      const ids = items.filter(i => i.done).map(i => i.id);
+      if (!ids.length) return;
+
+      const { error } = await db
+        .from('shopping_items')
+        .delete()
+        .in('id', ids);
+
+      if (error) { console.error('삭제 오류:', error); return; }
+      items = items.filter(i => !i.done);
+      render();
+    }
+
+    loadItems();
+  </script>
+</body>
+</html>
